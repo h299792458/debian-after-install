@@ -3,7 +3,7 @@ function ber = receiver(sps, G, hcd, x, rawbits)
 x_inph = real(ifft(fft(real(x)).* G));
 x_quad = real(ifft(fft(imag(x)).* G));
 
-% use 2 sps
+% using two-fold oversampling
 L = 2;
 x = x_inph(1:sps/L:end) + 1i * x_quad(1:sps/L:end);
 

@@ -29,25 +29,25 @@ for n = -Nf : Nf
 end
 
 %----------------------------------------------------------------------------
-% Filter #2 designed by the frequency sampling method (FSM), i.e., taking
-% the inverse DFT of discrete chromatic dispersion frequency response with
-% digital frequencies from -pi to pi. This will produce an impulse response
-% with non-constant magnitude and a corresponding DTFT with N points
-% specified. Note that the operation of fftshift introduces a linear phase
-% to the designed frequency response. Note that this is equivalent to
-% solving the problem of D*h[n] = H[k], where D is an NxN DFT matrix, and
-% h and H has N points. The solution is given by hcd_A2 = inverse(D)*H,
-% where D = dftmtx(N) is the DFT matrix.
+% Filter #2 is designed by the frequency sampling method (FSM), i.e.,
+% taking the inverse DFT of the conjugate of discrete chromatic dispersion
+% frequency response H(w) with digital frequencies from -pi to pi. This
+% will produce an impulse response with non-constant magnitude and a
+% corresponding DTFT with N points specified. This corresponds to the
+% zero-forcing solution of the linear model Y(w) = H(w)X(w) + W(w), where
+% X(w) is the pulseshaped original signal spectrum with two-fold
+% oversampling. Note that the operation of fftshift introduces a linear
+% phase to the designed frequency response.
 %----------------------------------------------------------------------------
 W = [0 : Nf, -Nf : -1] * 2 * pi / N;
 H = exp(1i * K * W.^2);
 hcd_A2 = fftshift(ifft(H));
 
 %----------------------------------------------------------------------------
-% filter #3 designed by FSM with oversampling. Note that this is equivalent
-% to solving the lease squares problem of D*h[n] = H[k], where D is an MxN
-% DFT matrix, h has N points, and H has M points. The solution is given by
-% h = inverse(D'*D)*D'*H. When M is large and the desired frequency
+% Filter #3 is designed by FSM with oversampling. Note that this is
+% equivalent to solving the lease squares problem of D*h[n] = H[k], where D
+% is an MxN DFT matrix, h has N points, and H has M points. The solution is
+% given by h = inv(D'*D)*D'*H. When M is large and the desired frequency
 % response is sampled from -pi to pi, the least squares criteria approaches
 % the mean squared error criteria over the full band, and according the
 % convergence of Fourier series, the solution of minimizing the MSE is the
@@ -61,15 +61,20 @@ H = exp(1i * K * W.^2);
 hcd_A3 = ifft(H);
 hcd_A3 = fftshift([hcd_A3(1 : Nf + isodd), hcd_A3(end - Nf + isodd : end)]);
 
-% this is equivalent to...
+% This can be formulated as a overdetermined system problem, i.e., design
+% an N points time domain impulse response h[n] such that the DTFT of h[n]
+% matches the desired DTFT at M (M > N) points in the least squares sense
 
 % D = dftmtx(M);
-% D = [D(:, 1:Nf+isodd), D(:, end-Nf+isodd:end)];
+% D = [D(:, 1 : Nf + isodd), D(:, end - Nf + isodd : end)];
 % hcd_A3 = (D' * D + 1e-6 * eye(N)) \ D' * H;
 % hcd_A3 = fftshift(transpose(hcd_A3));
 
-% frequency weighted version
-
+%----------------------------------------------------------------------------
+% Filter #4 is designed as a frequency weighted version of filter 3, i.e.,
+% instead of minimizing the MSE of DTFT within the full band, only the
+% passband of the pulseshaper is considered in the optimization
+%----------------------------------------------------------------------------
 W = get_fft_grid(M, 2 * pi);
 H = exp(1i * K * W.^2);
 H = [H(1 : M/2 - L), H(end - M/2 + L + 1 : end)];
@@ -94,38 +99,66 @@ hcd_A4 = fftshift(transpose(hcd_A4));
 %----------------------------------------------------------------------------
 % Filter #5 designed by applying FSM to the Wiener deconvolution filter in
 % frequency domain. It has the same group delay as the direct FSM but with
-% magnitude optimized for noise suppression
+% magnitude optimized for noise suppression. First, the two-fold
+% oversampled Wiener deconvolution filter is obtained as the LMMSE solution
+% of estimating X(w), the pulseshaped original signal spectrum with
+% two-fold oversampling. The linear model is written as Y(w) = H(w)X(w) +
+% W(w). Note that some system models consider a WGN channel noise W with a
+% scaled identity covariance matrix, however, some models consider a WGN
+% channel noise W filtered by the receiver filter and hence with a general
+% diagonal covariance matrix.
 %----------------------------------------------------------------------------
 G = frequency_response(N, 2, a, 1, 'rc'); G = transpose(G);
 W = [0 : Nf, -Nf : -1] * 2 * pi / N;
-H = exp(1i * K * W.^2) .* G.^2 ./ (G.^2 + eta);
+% V1: assuming WGN
+% H = exp(1i * K * W.^2) .* G.^2 ./ (G.^2 + eta);
+% V2: assuming RRC filtered Gaussian noise
+H = exp(1i * K * W.^2) .* G ./ (G + eta);
+
+% Obtain the N points time domain impulse response, the DTFT of which
+% matches the desired DTFT at N points exactly. Due to time aliasing, an
+% overall MSE between the DTFTs cannot be claimed
+
 hcd_A5 = fftshift(ifft(H));
 
-% which can be formally solved as a least squares problem...
+% This is can be formulated as a linear system problem...
 
-% G = frequency_response(N, 2, a, 1, 'rc'); G = transpose(G);
-% W = [0 : Nf, -Nf : -1] * 2 * pi / N;
-% H = exp(1i * K * W.^2) .* G.^2 ./ (G.^2 + eta);
 % D = dftmtx(N);
 % hcd_A5 = fftshift(transpose(D \ H(:)));
 
 %----------------------------------------------------------------------------
-% Filter #6 designed by applying oversampling FSM to the Wiener
-% deconvolution filter in frequency domain.
+% Filter #6 is designed by applying the oversampling FSM to the Wiener
+% deconvolution filter in frequency domain. First, the two-fold oversampled
+% Wiener deconvolution filter is obtained as the LMMSE solution of
+% estimating X(w), the pulseshaped original signal spectrum with two-fold
+% oversampling. The linear model is written as Y(w) = H(w)X(w) + W(w). Note
+% that some system models consider a WGN channel noise W with a scaled
+% identity covariance matrix, however, some models consider a WGN channel
+% noise W filtered by the receiver filter and hence with a general diagonal
+% covariance matrix.
 %----------------------------------------------------------------------------
 G = frequency_response(M, 2, a, 1, 'rc'); G = transpose(G);
 W = get_fft_grid(M, 2 * pi);
-H = exp(1i * K * W.^2) .* G.^2 ./ (G.^2 + eta);
+% V1: assuming WGN
+% H = exp(1i * K * W.^2) .* G.^2 ./ (G.^2 + eta);
+% V2: assuming RRC filtered Gaussian noise
+H = exp(1i * K * W.^2) .* G ./ (G + eta);
+
+% Obtain the M (M > N) points time domain impulse response followed by
+% an N points truncation in the center. The large M ensures little time
+% aliasing in time domain and therefore a rectangular truncation gives the
+% minimum MSE in the resulting DTFT, according to the convergence theorem
+% of Fourier series
+
 hcd_A6 = ifft(H);
 hcd_A6 = fftshift([hcd_A6(1 : Nf + isodd), hcd_A6(end - Nf + isodd : end)]);
 
-% which can be formally solved as a least squares problem...
+% This can be formulated as a overdetermined system problem, i.e., design
+% an N points time domain impulse response h[n] such that the DTFT of h[n]
+% matches the desired DTFT at M (M > N) points in the least squares sense
 
-% G = frequency_response(M, 2, a, 1, 'rc'); G = transpose(G);
-% W = get_fft_grid(M, 2*pi);
-% H = exp(1i * K * W.^2) .* G.^2 ./ (G.^2 + eta);
 % D = dftmtx(M);
-% D = [D(:, 1 : Nf+isodd), D(:, end-Nf+isodd : end)];
+% D = [D(:, 1 : Nf + isodd), D(:, end - Nf + isodd : end)];
 % hcd_A6 = (D' * D + epsilon * eye(N)) \ D' * H(:);
 % hcd_A6 = fftshift(transpose(hcd_A6));
 
@@ -144,15 +177,15 @@ end
 % Plot the frequency response
 %----------------------------------------------------------------------------
 if PLOT
-    figure;
+    figure('color', 'w');
     for ii = 1 : size(hcd, 1)
         hh = fftshift(hcd(ii, :));
         hh = [hh(1 : Nf), zeros(1, M - Nf - Nf), hh(Nf + 2 : end)];
         xx = get_fft_grid(M, 2 * pi) / pi;
         yy = abs(fft(hh));
-        semilogy(fftshift(xx), fftshift(yy)); hold on;
+        semilogy(xx(1 : M/2), yy(1 : M/2), 'linewidth', 2); hold on;
     end
-    xlim([-1, 1]); grid on;
+    xlim([0, 1]); grid on;
     xlabel('Normalized frequency (\times \pi)'); ylabel('Magnitude');
 end
 
