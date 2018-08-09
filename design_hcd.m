@@ -1,19 +1,21 @@
-function hcd = design_hcd(K, N)
+function hcd = design_hcd(K, N, ID)
 % Design the time-domain impulse response of the chromatic dispersion
 % compensation filter
 
-if nargin < 2, N = 111; end
-if nargin < 1, K = 2; end
+if nargin < 3, ID = 1:6; end
+if nargin < 2, N = 141; end
+if nargin < 1, K = 19; end
 
-PLOT = false;
+PLOT = true;
 
 N = N + 1 - mod(N, 2);
 Nf = (N - 1) / 2;
 M = 8193;
 isodd = mod(M, 2);
+Mf = (M - isodd) / 2;
 a = 0.22;
-L = 1730;
-epsilon = 1e-8;
+L = round((1 - a) * 0.5 * Mf);
+epsilon = 1e-13;
 eta = 0.01;
 
 %----------------------------------------------------------------------------
@@ -67,7 +69,7 @@ hcd_A3 = fftshift([hcd_A3(1 : Nf + isodd), hcd_A3(end - Nf + isodd : end)]);
 
 % D = dftmtx(M);
 % D = [D(:, 1 : Nf + isodd), D(:, end - Nf + isodd : end)];
-% hcd_A3 = (D' * D + 1e-6 * eye(N)) \ D' * H;
+% hcd_A3 = (D' * D + epsilon * eye(N)) \ D' * H;
 % hcd_A3 = fftshift(transpose(hcd_A3));
 
 %----------------------------------------------------------------------------
@@ -75,22 +77,22 @@ hcd_A3 = fftshift([hcd_A3(1 : Nf + isodd), hcd_A3(end - Nf + isodd : end)]);
 % instead of minimizing the MSE of DTFT within the full band, only the
 % passband of the pulseshaper is considered in the optimization
 %----------------------------------------------------------------------------
-% W = get_fft_grid(M, 2 * pi);
-% H = exp(1i * K * W.^2);
-% H = [H(1 : M/2 - L), H(end - M/2 + L + 1 : end)];
-% D = dftmtx(M);
-% D = [D(1 : M/2 - L, :); D(end - M/2 + L + 1 : end, :)];
-% D = [D(:, 1 : Nf + isodd), D(:, end - Nf + isodd : end)];
-% hcd_A4 = (D' * D + epsilon * eye(N)) \ D' * H(:);
-% hcd_A4 = fftshift(transpose(hcd_A4));
-
 W = get_fft_grid(M, 2 * pi);
-H = exp(1i * K * W.^2);
-H(M/2 - L + 1 : end - M/2 + L) = 0;
+Hd = exp(1i * K * W.^2);
+H = [Hd(1 : Mf - L), Hd(end - Mf + L + 1 : end)];
 D = dftmtx(M);
+D = [D(1 : Mf - L, :); D(end - Mf + L + 1 : end, :)];
 D = [D(:, 1 : Nf + isodd), D(:, end - Nf + isodd : end)];
 hcd_A4 = (D' * D + epsilon * eye(N)) \ D' * H(:);
 hcd_A4 = fftshift(transpose(hcd_A4));
+
+% W = get_fft_grid(M, 2 * pi);
+% H = exp(1i * K * W.^2);
+% H(Mf - L + 1 : end - Mf + L) = 0;
+% D = dftmtx(M);
+% D = [D(:, 1 : Nf + isodd), D(:, end - Nf + isodd : end)];
+% hcd_A4 = (D' * D + epsilon * eye(N)) \ D' * H(:);
+% hcd_A4 = fftshift(transpose(hcd_A4));
 
 %----------------------------------------------------------------------------
 % filter #4 and #5 designed by windowing filter #1 by raised-cosine with
@@ -158,17 +160,19 @@ H = exp(1i * K * W.^2) .* G ./ (G + eta);
 % minimum MSE in the resulting DTFT, according to the convergence theorem
 % of Fourier series
 
-hcd_A6 = ifft(H);
-hcd_A6 = fftshift([hcd_A6(1 : Nf + isodd), hcd_A6(end - Nf + isodd : end)]);
+% hcd_A6 = ifft(H);
+% hcd_A6 = fftshift([hcd_A6(1 : Nf + isodd), hcd_A6(end - Nf + isodd : end)]);
 
 % This can be formulated as a overdetermined system problem, i.e., design
 % an N points time domain impulse response h[n] such that the DTFT of h[n]
 % matches the desired DTFT at M (M > N) points in the least squares sense
 
-% D = dftmtx(M);
-% D = [D(:, 1 : Nf + isodd), D(:, end - Nf + isodd : end)];
-% hcd_A6 = (D' * D + epsilon * eye(N)) \ D' * H(:);
-% hcd_A6 = fftshift(transpose(hcd_A6));
+H = [H(1 : Mf - L), H(end - Mf + L + 1 : end)];
+D = dftmtx(M);
+D = [D(1 : Mf - L, :); D(end - Mf + L + 1 : end, :)];
+D = [D(:, 1 : Nf + isodd), D(:, end - Nf + isodd : end)];
+hcd_A6 = (D' * D + epsilon * eye(N)) \ D' * H(:);
+hcd_A6 = fftshift(transpose(hcd_A6));
 
 %----------------------------------------------------------------------------
 % Eghbali, Amir, et al. "Optimal least-squares FIR digital filters for
@@ -187,6 +191,7 @@ hcd_A6 = fftshift([hcd_A6(1 : Nf + isodd), hcd_A6(end - Nf + isodd : end)]);
 % Group them together
 %----------------------------------------------------------------------------
 hcd = [hcd_A1; hcd_A2; hcd_A3; hcd_A4; hcd_A5; hcd_A6];
+hcd = hcd(ID, :);
 
 %----------------------------------------------------------------------------
 % Plot the impulse response
@@ -198,7 +203,8 @@ if PLOT
 end
 
 %----------------------------------------------------------------------------
-% Plot the frequency response
+% Plot the frequency response and display the MSE within in bandwidth
+% interested
 %----------------------------------------------------------------------------
 if PLOT
     figure('color', 'w');
@@ -208,10 +214,13 @@ if PLOT
         xx = fftshift(get_fft_grid(M, 2 * pi) / pi);
         yy = fftshift(abs(fft(hh)));
         semilogy(xx, yy, 'linewidth', 2); hold on;
+        He = fft(hh);
+        MSE(ii) = mean(abs(He(1:Mf-L) - Hd(1:Mf-L)).^2);
     end
     xlim([0, 1]); grid on;
     xlabel('Normalized frequency (\times \pi)'); ylabel('Magnitude');
 end
+% disp(MSE);
 
 %----------------------------------------------------------------------------
 % Raised cosine function
