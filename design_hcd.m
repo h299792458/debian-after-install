@@ -2,18 +2,18 @@ function hcd = design_hcd(K, N)
 % Design the time-domain impulse response of the chromatic dispersion
 % compensation filter
 
-if nargin < 2, N = 119; end
-if nargin < 1, K = 7.1; end
+if nargin < 2, N = 111; end
+if nargin < 1, K = 2; end
 
 PLOT = false;
 
 N = N + 1 - mod(N, 2);
 Nf = (N - 1) / 2;
-M = 8192;
+M = 8193;
 isodd = mod(M, 2);
 a = 0.22;
-L = 1900;
-epsilon = 1e-6;
+L = 1730;
+epsilon = 1e-8;
 eta = 0.01;
 
 %----------------------------------------------------------------------------
@@ -75,11 +75,19 @@ hcd_A3 = fftshift([hcd_A3(1 : Nf + isodd), hcd_A3(end - Nf + isodd : end)]);
 % instead of minimizing the MSE of DTFT within the full band, only the
 % passband of the pulseshaper is considered in the optimization
 %----------------------------------------------------------------------------
+% W = get_fft_grid(M, 2 * pi);
+% H = exp(1i * K * W.^2);
+% H = [H(1 : M/2 - L), H(end - M/2 + L + 1 : end)];
+% D = dftmtx(M);
+% D = [D(1 : M/2 - L, :); D(end - M/2 + L + 1 : end, :)];
+% D = [D(:, 1 : Nf + isodd), D(:, end - Nf + isodd : end)];
+% hcd_A4 = (D' * D + epsilon * eye(N)) \ D' * H(:);
+% hcd_A4 = fftshift(transpose(hcd_A4));
+
 W = get_fft_grid(M, 2 * pi);
 H = exp(1i * K * W.^2);
-H = [H(1 : M/2 - L), H(end - M/2 + L + 1 : end)];
+H(M/2 - L + 1 : end - M/2 + L) = 0;
 D = dftmtx(M);
-D = [D(1 : M/2 - L, :); D(end - M/2 + L + 1 : end, :)];
 D = [D(:, 1 : Nf + isodd), D(:, end - Nf + isodd : end)];
 hcd_A4 = (D' * D + epsilon * eye(N)) \ D' * H(:);
 hcd_A4 = fftshift(transpose(hcd_A4));
@@ -162,6 +170,22 @@ hcd_A6 = fftshift([hcd_A6(1 : Nf + isodd), hcd_A6(end - Nf + isodd : end)]);
 % hcd_A6 = (D' * D + epsilon * eye(N)) \ D' * H(:);
 % hcd_A6 = fftshift(transpose(hcd_A6));
 
+%----------------------------------------------------------------------------
+% Eghbali, Amir, et al. "Optimal least-squares FIR digital filters for
+% compensation of chromatic dispersion in digital coherent optical
+% receivers." Journal of Lightwave Technology 32.8 (2014): 1449-1456.
+%----------------------------------------------------------------------------
+% erfcmp = @(x) double(erf(sym(x)));
+% hcd_A6 = ones(1, N);
+% for n = -Nf : Nf
+%     hcd_A6(n + Nf + 1) = exp(-1i * (n^2 / (4*K) + 3*pi/4)) / (4*sqrt(pi*K)) ...
+%         * (erfcmp(exp(1i*3*pi/4) * (2*K*pi-n) / (2*sqrt(K))) ...
+%         + erfcmp(exp(1i*3*pi/4) * (2*K*pi+n) / (2*sqrt(K))));
+% end
+
+%----------------------------------------------------------------------------
+% Group them together
+%----------------------------------------------------------------------------
 hcd = [hcd_A1; hcd_A2; hcd_A3; hcd_A4; hcd_A5; hcd_A6];
 
 %----------------------------------------------------------------------------
@@ -181,9 +205,9 @@ if PLOT
     for ii = 1 : size(hcd, 1)
         hh = fftshift(hcd(ii, :));
         hh = [hh(1 : Nf), zeros(1, M - Nf - Nf), hh(Nf + 2 : end)];
-        xx = get_fft_grid(M, 2 * pi) / pi;
-        yy = abs(fft(hh));
-        semilogy(xx(1 : M/2), yy(1 : M/2), 'linewidth', 2); hold on;
+        xx = fftshift(get_fft_grid(M, 2 * pi) / pi);
+        yy = fftshift(abs(fft(hh)));
+        semilogy(xx, yy, 'linewidth', 2); hold on;
     end
     xlim([0, 1]); grid on;
     xlabel('Normalized frequency (\times \pi)'); ylabel('Magnitude');
