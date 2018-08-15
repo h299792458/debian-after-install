@@ -1,20 +1,22 @@
+%===========================================================================
+% Noise analysis on phase recovery based on pilot-tone. The phase noise is
+% first estimated from a lowpass filtered pilot-tone, then the desired
+% signal is compensated with estimated phase.
+%===========================================================================
 clear
 
-transmitter;
+fc = 1e6;
+fs = 20e6;
+nsample = 10^5;
+t = (0 : (1/fs) : (nsample-1)/fs)';
+pn = phase_noise(nsample, 1e-3, 0);
+an = gaussian_noise(nsample, 1, .3, 'linear', 'complex');
+x = exp(1i * pn(:)) + an;
+H = frequency_response(nsample, fs, 0.01, 6e6, 'rc');
+xf = ifft(fft(x) .* H);
+xc = x .* conj(xf) ./ abs(xf);
+nc = an .* conj(xf) ./ abs(xf);
 
-SNR = 17;
-sigma2 = idbw(dbw(calcrms(x).^2) - SNR);
-x_full = x + gaussian_noise(nsap, 1, sigma2, 'linear', 'complex');
-
-ts = 1 / (2*baudrate);
-K = fiber.DL * wavelength * wavelength / (4 * pi * 299792458 * ts * ts);
-N = 91 : 10 : 201;
-
-for ii = 1 : length(N)
-    hcd = design_hcd(K, N(ii));
-    ber(ii,:) = receiver(sps, G, hcd, x_full, rawbits)
-end
-BER = snr2ber(SNR + dbw(sps), bitpersym, 'db');
-figure; semilogy(N, BER*ones(1,ii), 'k', N, ber); grid on; xlim([min(N), max(N)]);
-
-keyboard;
+% observe there is a peak in nc, and xc has lower WGN PSD
+spectrumAnalyzer([x, xc], [], fs);
+spectrumAnalyzer([an(:), nc(:)], [], fs);

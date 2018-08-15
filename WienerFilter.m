@@ -1,50 +1,53 @@
 %============================================================================
-% This script is dedicated to section 11.7 of the following reference:
+% This script is dedicated to section 11.7 of reference [1]. The signal
+% model is an unfiltered AR(1) signal with WGN. Various techniques are
+% demonstrated to estimate the AR(1) signal.
 % 
-% Steven M. Kay, "Fundamentals of statistical signal processing: estimation
-% theory." (1993).
+% [1] Steven M. Kay, "Fundamentals of statistical signal processing:
+% estimation theory." (1993).
 %============================================================================
 clear
-% close all
 PLOT = true;
 
 %----------------------------------------------------------------------------
-% Scalar wiener estimator with scalar unknown and scalar observation.
-% Multiple realizations are demonstrated as a sequence. The data model is
-% given by x = s + w, where s and x are random variables. The estimation of
-% s tends to be x when SNR is high and zero when SNR is low.
+% Scalar Wiener estimator with scalar unknown and scalar observation.
+% Multiple realizations are demonstrated as an iid sequence. The data model
+% is given by X = S + W, where S and X are random variables. The estimation
+% of S tends to be X when SNR is high and zero when SNR is low.
 %----------------------------------------------------------------------------
-N = 31;
-snr = idbw(5);
-var_s = 1;
-var_w = var_s./snr;
-
-% Random variable with normal distribution, generate a sequence of iid
-% samples to represent multiple realizations, generate WGN as well
-s = gaussian_noise(N, 1, var_s, 'linear', 'real');
-w = gaussian_noise(N, 1, var_w, 'linear', 'real');
-x = s + w;
-
-% Scalar wiener filter: s_hat approaches x when SNR is high, becomes 0 when
-% SNR is low
-s_hat = snr / (snr + 1) * x;
-
-if PLOT, 
-    figure; plot(1:N, s, '--', 'linewidth', 1); hold on;
-    plot(1:N, x, 'linewidth', 1); 
-    plot(1:N, s_hat, 'linewidth', 2); grid on; 
-    xlabel('Sample number, n')
-    title('Scalar Wiener Filter Example');
-end
+% N = 50;
+% snr = idbw(5);
+% var_s = 1;
+% var_w = var_s./snr;
+% s = gaussian_noise(N, 1, var_s, 'linear', 'real');
+% w = gaussian_noise(N, 1, var_w, 'linear', 'real');
+% x = s + w;
+% s_hat = snr / (snr + 1) * x;
+% 
+% if PLOT, 
+%     figure;
+%     plot(1:N, s, '--', 'linewidth', 1); hold on;
+%     plot(1:N, x, 'linewidth', 1); 
+%     plot(1:N, s_hat, 'linewidth', 2); grid on; 
+%     xlabel('Sample number, n')
+%     title('Scalar Wiener Filter Example');
+% end
 
 %----------------------------------------------------------------------------
 % Finite Wiener smoother with vector unknowns and vector observations. The
-% data model is x = s + w, where x and s are vector random variables or
-% blocks of random processes. In this particular example, the unknown is
-% assumed to be a section of AR(1) process, the autocorrelation matrix of
-% which is given explicitly. Otherwise, estimated autocorrelation matrix
-% could be used for finite wiener smoother. Note that the matrix grows
-% substantially with the block size and also matrix inversion is needed.
+% data model is X = S + W, where X and S are vector random variables or
+% blocks of WSS random processes. The finite Wiener smoother performs
+% estimation of each unknown in the block by using all the data samples in
+% the block. Therefore, it should give the best results when compared with
+% Wiener filter of lengh N in which case only N samples are used to
+% estimate the current data
+% 
+% The Wiener smoother is implemented in time domain as a smoothing matrix,
+% which is constructed based on the autocorrelation matrix of X and S. In
+% this example, those AC matrices are given explicitly. Otherwise,
+% estimated autocorrelation matrix could be used. Note that the smoothing
+% matrix grows substantially with the block size and also matrix inversion
+% is needed.
 % 
 % This method should be compared to the finite wiener smoother implemented
 % in frequency domain via DFT, i.e., using the infinite wiener smoother
@@ -58,65 +61,68 @@ end
 % finite impulse response. Multiple design methods could be applied to
 % obtain the FIR filter in time domain. 
 %----------------------------------------------------------------------------
-N = 31;
-snr = idbw(5);
+L = 2500;
+snr = idbw(0);
 
 % Generate AR(1) process with WGN, note that the power of AR(1) is r[0]
 a = -0.95;
 var_u = 1;
-s = arma(N, 1, [1, a], [1], var_u);
-var_w = var_u / (1 - a^2) / snr;
-w = gaussian_noise(N, 1, var_w, 'linear', 'real');
+s = arma(L, 1, [1, a], [1], var_u);
+var_w = acfar1(var_u, a, 0) / snr;
+w = gaussian_noise(L, 1, var_w, 'linear', 'real');
 x = s + w;
+Css = zeros(L);
+for ii = 1:L
+    for jj = 1:L
+        Css(ii, jj) = acfar1(var_u, a, ii - jj);
+    end
+end
+t_1 = Css / (Css + var_w * eye(L)) * x;
+if PLOT, figure; mesh(1:L, 1:L, Css); xlabel('Sample number, n'); end
 
-% Finite Wiener smoother implemented in time domain
+%----------------------------------------------------------------------------
+% Wiener filter corresponding to the case of scalar unknown and vector
+% observations. Could achieve the performance of finite Wiener smoother
+% with a much shorter filter length.
+%----------------------------------------------------------------------------
+N = 11;
+Nf = (N - 1) / 2;
 Css = zeros(N);
 for ii = 1:N
     for jj = 1:N
-        Css(ii, jj) = var_u / (1 - a^2) * (-a)^abs(ii - jj);
+        Css(ii, jj) = acfar1(var_u, a, ii - jj);
     end
 end
-if PLOT, figure; mesh(1:N, 1:N, Css); xlabel('Sample number, n'); end
-s_hat_td = Css / (Css + var_w * eye(N)) * x;
+k = -Nf : Nf;
+rss = acfar1(var_u, a, k); rss = rss.';
+h_2 = (Css + var_w * eye(N)) \ rss;
+t_2 = conv(x, h_2, 'same');
 
-if PLOT, 
-    figure; plot(1:N, s, '--', 'linewidth', 1); hold on;
-    plot(1:N, x, 'linewidth', 1); 
-    plot(1:N, s_hat_td, 'linewidth', 2); grid on; 
-    xlabel('Sample number, n');
-    title('Vector Wiener Filter Example');
-end
-
+%----------------------------------------------------------------------------
 % Finite Wiener smoother implemented in frequency domain
-omega = get_fft_grid(N, 2*pi);
-Pss = var_u ./ abs(1 + a * exp(-1i*omega)).^2;
+%----------------------------------------------------------------------------
+omega = get_fft_grid(L, 2*pi);
+Pss = var_u ./ abs(1 + a * exp(-1i * omega)).^2;
 Hw = Pss ./ (Pss + var_w); Hw = transpose(Hw);
-s_hat_fd = real(ifft(fft(x) .* Hw));
+t_3 = real(ifft(fft(x) .* Hw));
+
+%----------------------------------------------------------------------------
+% Infinite Wiener filter implemented in time domain via digital filter
+% design. Note that "Hw" is a sampled version of true Wiener smoother
+% frequency response which is derived from theory in this example. However,
+% taking directly the inverse DFT of "Hw" does not generate the sampled
+% version of true continuous-time impluse response due to time aliasing
+% (negligible in this case).
+%----------------------------------------------------------------------------
+M = 1024;
+isodd = mod(M, 2);
+htmp = ifft(transpose(Hw));
+h_4 = fftshift([htmp(1 : Nf + isodd), htmp(end - Nf + isodd : end)]);
+t_4 = conv(x, h_4, 'same');
 
 if PLOT,
-    figure; semilogy(fftshift(omega/pi), fftshift(Hw), 'o-'); grid on;
-    figure; plot(1:N, s, 1:N, s_hat_td, 1:N, s_hat_fd); grid on;
+    figure; semilogy(fftshift(omega/pi), fftshift(abs(Hw)), 'o-'); grid on;
+    figure; plot(1:L, s, 1:L, t_1, 1:L, t_2, 1:L, t_3, 1:L, t_4); grid on;
+    xlabel('Sample number, n');
 end
-fprintf('Estimation MSE: TD %f, FD %f\n', mean(abs(s-s_hat_td).^2), mean(abs(s-s_hat_fd).^2));
-
-% Infinite wiener filter implemented in time domain via digital filter
-% design
-N = 31;
-Nf = (N - 1) / 2;
-% Note that "Hw" is a sampled version of true Wiener smoother frequency
-% response which is derived from theory in this example. However, taking
-% directly the inverse DFT of "Hw" does not generate the sampled version of
-% true continuous-time impluse response due to time aliasing (negligible in
-% this case).
-N = 1024;
-isodd = mod(N, 2);
-omega = get_fft_grid(N, 2*pi);
-Pss = var_u ./ abs(1 + a * exp(-1i*omega)).^2;
-Hw = Pss ./ (Pss + var_w); 
-htmp = ifft(Hw);
-h = fftshift([htmp(1 : Nf + isodd), htmp(end - Nf + isodd : end)]);
-h = h ./ sum(abs(h));
-if PLOT, figure; stem(h); grid on; end
-s_hat_if = conv(x, h, 'same');
-
-fprintf('Estimation MSE: TD %f, IF %f\n', mean(abs(s-s_hat_td).^2), mean(abs(s-s_hat_if).^2));
+fprintf('Estimation MSE: %f, %f, %f, %f\n', mean(abs(s-t_1).^2), mean(abs(s-t_2).^2), mean(abs(s-t_3).^2), mean(abs(s-t_4).^2));
