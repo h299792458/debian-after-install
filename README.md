@@ -31,3 +31,5 @@ sudo apt-get install texlive
 # Install virtualbox vm from offical website
 # WARNING: The vboxdrv kernel module is not loaded.
 # fix: using synaptic to fix broken packages...
+sudo apt-get install linux-headers-$(uname -r)
+sudo /sbin/vboxconfig
