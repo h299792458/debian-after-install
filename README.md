@@ -15,8 +15,11 @@ sudo apt-get install fcitx fcitx-sunpinyin
 im-config
 # Edit update sources list "/etc/apt/sources.list"
 deb http://deb.debian.org/debian/ stretch main contrib non-free
+
 deb-src http://deb.debian.org/debian/ stretch main contrib non-free
+
 deb http://security.debian.org/ stretch/updates main contrib non-free
+
 deb http://deb.debian.org/debian/ stretch-updates main contrib non-free
 # Update
 sudo apt-get update && sudo apt-get upgrade
@@ -24,6 +27,7 @@ sudo apt-get update && sudo apt-get upgrade
 sudo nmap -sS localhost
 # [Option] Enable BBR by adding two lines in /etc/sysctl.conf
 net.core.default_qdisc=fq
+
 net.ipv4.tcp_congestion_control=bbr
 # Make a firewall
 # Install applications
@@ -32,6 +36,7 @@ sudo apt-get install texlive
 ## WARNING: The vboxdrv kernel module is not loaded.
 ## fix: using synaptic to fix broken packages...
 sudo apt-get install linux-headers-$(uname -r)
+
 sudo /sbin/vboxconfig
 # Install Matlab
 sudo mount -t auto -o loop ~/path-to-matlab/Matlab_2016a/R2016a_glnxa64.iso ~/matlab/
