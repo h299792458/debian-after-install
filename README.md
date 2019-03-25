@@ -29,7 +29,15 @@ net.ipv4.tcp_congestion_control=bbr
 # Install applications
 sudo apt-get install texlive
 # Install virtualbox vm from offical website
-# WARNING: The vboxdrv kernel module is not loaded.
-# fix: using synaptic to fix broken packages...
+## WARNING: The vboxdrv kernel module is not loaded.
+## fix: using synaptic to fix broken packages...
 sudo apt-get install linux-headers-$(uname -r)
 sudo /sbin/vboxconfig
+# Install Matlab
+sudo mount -t auto -o loop ~/path-to-matlab/Matlab_2016a/R2016a_glnxa64.iso ~/matlab/
+# Matlab desktop entry
+[Desktop Entry]
+Exec=/usr/local/MATLAB/R2016a/bin/matlab -desktop
+Icon=/usr/local/MATLAB/R2016a/toolbox/shared/dastudio/resources/MatlabIcon.png
+Terminal=false
+StartupNotify=true
