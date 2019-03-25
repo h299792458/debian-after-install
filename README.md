@@ -1,38 +1,54 @@
 # Debian after install
 ## Install intel wifi driver if necessary
-'''sh
+```sh
 sudo apt-get install firmware-iwlwifi
-'''
-# Config sudo with new file
-'''sh
+```
+## Config sudo with new file
+```sh
 visudo -f /etc/sudoers.d/username
-'''
-# Add one line
-myusername ALL=(ALL) ALL
-# If the Xfce desktop enviroment is used, chinese fonts installation is required (synaptic)
-# add the following to the .bashrc file if chinese display is desired
+```
+
+Add one line:
+```sh
+username ALL=(ALL) ALL
+```
+## For Xfce DE, chinese fonts installation is required (using synaptic suggested).
+
+Add the following to the .bashrc file if chinese display is desired:
+```sh
 export LANG=zh_CN-UTF8
-# optional
+```
+## _optional_
 sudo dpkg-reconfigure locales
-# Input method
+## Input method
+```sh
 sudo apt-get install fcitx fcitx-sunpinyin
 im-config
-# Edit update sources list "/etc/apt/sources.list"
+```
+## Edit "/etc/apt/sources.list"
+```sh
 deb http://deb.debian.org/debian/ stretch main contrib non-free
 deb-src http://deb.debian.org/debian/ stretch main contrib non-free
 deb http://security.debian.org/ stretch/updates main contrib non-free
 deb http://deb.debian.org/debian/ stretch-updates main contrib non-free
-# Update
+```
+## Update
+```sh
 sudo apt-get update && sudo apt-get upgrade
-# Perform a quick scan for open ports
+```
+## Perform a quick scan for open ports
+```sh
 sudo nmap -sS localhost
-# [Option] Enable BBR by adding two lines in /etc/sysctl.conf
+```
+## [Option] Enable BBR by adding two lines in /etc/sysctl.conf
+```sh
 net.core.default_qdisc=fq
 net.ipv4.tcp_congestion_control=bbr
-# Make a firewall
-# Install applications
+```
+## Make a firewall
+## Install applications
 sudo apt-get install texlive
-# Install virtualbox vm from offical website
+## Install virtualbox vm from offical website
 # WARNING: The vboxdrv kernel module is not loaded.
 # fix: using synaptic to fix broken packages...
 sudo apt-get install linux-headers-$(uname -r)
