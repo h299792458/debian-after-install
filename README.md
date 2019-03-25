@@ -20,7 +20,9 @@ Add the following to the .bashrc file if chinese display is desired:
 export LANG=zh_CN-UTF8
 ```
 _optional_
+```sh
 sudo dpkg-reconfigure locales
+```
 
 ## Input method
 ```sh
@@ -62,13 +64,13 @@ From offical website suggested
 
 WARNING: The vboxdrv kernel module is not loaded.
 
-fix: using Synaptic to fix broken packages to solve the independences first.
+FIX: using Synaptic to fix broken packages to solve the independences first.
 
 ```sh
 sudo apt-get install linux-headers-$(uname -r)
 sudo /sbin/vboxconfig
 ```
-# Install Matlab
+## Install Matlab
 ```sh
 sudo mount -t auto -o loop ~/path-to-matlab/Matlab_2016a/R2016a_glnxa64.iso ~/matlab/
 ```
