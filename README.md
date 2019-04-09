@@ -37,6 +37,7 @@ Add the following to the .bashrc file if chinese display is desired:
 ```sh
 export LANG=zh_CN-UTF8
 ```
+
 _optional_
 ```sh
 sudo dpkg-reconfigure locales
@@ -52,19 +53,21 @@ _optional_
 im-config
 ```
 
-## Perform a quick scan for open ports
+## Network
+Perform a quick scan for open ports:
 ```sh
 sudo nmap -sS localhost
 ```
 
-## Enable BBR by adding two lines in /etc/sysctl.conf
+_optional_
+Enable BBR by adding two lines in /etc/sysctl.conf:
 ```sh
 net.core.default_qdisc=fq
 net.ipv4.tcp_congestion_control=bbr
 ```
 
 ## Make a firewall
-
+TODO
 
 ## Install Latex
 ```sh
@@ -72,22 +75,26 @@ sudo apt-get install texlive
 ```
 
 ## Install virtualbox
-Download from offical website suggested
+Download from the offical website suggested
 
-How to fix WARNING: The vboxdrv kernel module is not loaded.
-Using synaptic to fix broken packages to solve the independences first.
-
+How to fix
+```sh
+WARNING: The vboxdrv kernel module is not loaded.
+```
+1.  fix bad package independences via e.g. Synaptic.
+2.  run the following:
 ```sh
 sudo apt-get install linux-headers-$(uname -r)
 sudo /sbin/vboxconfig
 ```
 
 ## Install Matlab
+Mount the iso file:
 ```sh
 sudo mount -t auto -o loop ~/path-to-matlab/Matlab_2016a/R2016a_glnxa64.iso ~/matlab/
 ```
 
-Create Matlab desktop entry:
+Create desktop entry:
 ```sh
 [Desktop Entry]
 Exec=/usr/local/MATLAB/R2016a/bin/matlab -desktop
@@ -97,6 +104,7 @@ StartupNotify=true
 ```
 
 ## Mount Android phone (MTP)
+mount:
 ```sh
 jmtpfs Android/
 ```
