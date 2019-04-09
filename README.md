@@ -67,7 +67,9 @@ net.ipv4.tcp_congestion_control=bbr
 
 
 ## Install Latex
+```sh
 sudo apt-get install texlive
+```
 
 ## Install virtualbox
 Download from offical website suggested
@@ -84,6 +86,7 @@ sudo /sbin/vboxconfig
 ```sh
 sudo mount -t auto -o loop ~/path-to-matlab/Matlab_2016a/R2016a_glnxa64.iso ~/matlab/
 ```
+
 Create Matlab desktop entry:
 ```sh
 [Desktop Entry]
@@ -92,3 +95,11 @@ Icon=/usr/local/MATLAB/R2016a/toolbox/shared/dastudio/resources/MatlabIcon.png
 Terminal=false
 StartupNotify=true
 ```
+
+## Mount Android phone (MTP)
+```sh
+jmtpfs Android/
+```
+unmount:
+```sh
+fusermount -u Android/
