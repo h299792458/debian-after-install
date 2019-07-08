@@ -3,14 +3,12 @@
 Several things to do after installing debian
 
 ## Edit "/etc/apt/sources.list"
-Add sources:
+Add sources
 ```sh
-deb http://deb.debian.org/debian/ stretch main contrib non-free
-deb-src http://deb.debian.org/debian/ stretch main contrib non-free
-deb http://security.debian.org/ stretch/updates main contrib non-free
-deb http://deb.debian.org/debian/ stretch-updates main contrib non-free
+deb http://deb.debian.org/debian/ buster main contrib non-free
+deb http://security.debian.org/ buster/updates main contrib non-free
 ```
-Update:
+Update and upgrade
 ```sh
 sudo apt-get update && sudo apt-get upgrade
 ```
@@ -20,20 +18,20 @@ sudo apt-get update && sudo apt-get upgrade
 sudo apt-get install firmware-iwlwifi
 ```
 
-## Config sudo
-Create a new config file:
+## Install sudo
+Create a new config file
 ```sh
 visudo -f /etc/sudoers.d/username
 ```
-Add one line:
+Add one line
 ```sh
 username ALL=(ALL) ALL
 ```
 
-## Chinese language support
+## Install language support
 For Xfce DE, Chinese fonts installation is required (using Synaptic suggested).
 
-Add the following to the .bashrc file if chinese display is desired:
+Add the following to the .bashrc file if Chinese display is desired
 ```sh
 export LANG=zh_CN-UTF8
 ```
@@ -111,3 +109,4 @@ jmtpfs Android/
 unmount:
 ```sh
 fusermount -u Android/
+```
