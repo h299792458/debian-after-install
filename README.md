@@ -2,20 +2,27 @@
 
 Several things to do after installing debian
 
+## Check the OS release information
+```sh
+cat /etc/os-release
+```
+
 ## Edit "/etc/apt/sources.list"
 Add sources
 ```sh
-deb http://deb.debian.org/debian/ buster main contrib non-free
-deb http://security.debian.org/ buster/updates main contrib non-free
+deb http://mirrors.ustc.edu.cn/debian buster main contrib non-free
+deb http://security.debian.org/debian-security/ buster/updates main contrib non-free
 ```
 Update and upgrade
 ```sh
-sudo apt-get update && sudo apt-get upgrade
+apt-get update && apt-get upgrade
 ```
 
 ## Intel wifi driver
 ```sh
-sudo apt-get install firmware-iwlwifi
+apt-get install firmware-iwlwifi
+modprobe -r iwlwifi
+modprobe iwlwifi
 ```
 
 ## Install sudo
@@ -29,7 +36,10 @@ username ALL=(ALL) ALL
 ```
 
 ## Install language support
-For Xfce DE, Chinese fonts installation is required (using Synaptic suggested).
+Choose and install Chinese fonts
+```sh
+apt-get instal fonts-wqy-zenhei
+```
 
 Add the following to the .bashrc file if Chinese display is desired
 ```sh
