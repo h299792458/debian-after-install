@@ -2,11 +2,6 @@
 
 Several things to do after installing debian
 
-## Check the OS release information
-```sh
-cat /etc/os-release
-```
-
 ## Edit "/etc/apt/sources.list"
 Add sources
 ```sh
@@ -15,14 +10,7 @@ deb http://security.debian.org/debian-security/ buster/updates main contrib non-
 ```
 Update and upgrade
 ```sh
-apt-get update && apt-get upgrade
-```
-
-## Intel wifi driver
-```sh
-apt-get install firmware-iwlwifi
-modprobe -r iwlwifi
-modprobe iwlwifi
+sudo apt-get update && sudo apt-get upgrade
 ```
 
 ## Install sudo
@@ -35,17 +23,42 @@ Add one line
 username ALL=(ALL) ALL
 ```
 
+## Check the OS release information
+```sh
+cat /etc/os-release
+```
+
+## Check the CPU info
+```sh
+sudo less /proc/cpuinfo
+```
+or
+```sh
+lscpu
+```
+
+## Update CPU microcode
+```sh
+sudo dmesg | grep microcode
+sudo apt-get install intel-microcode
+sudo reboot
+```
+
+## Install Intel wifi driver
+```sh
+apt-get install firmware-iwlwifi
+modprobe -r iwlwifi && modprobe iwlwifi
+```
+
 ## Install language support
 Choose and install Chinese fonts
 ```sh
 apt-get instal fonts-wqy-zenhei
 ```
-
 Add the following to the .bashrc file if Chinese display is desired
 ```sh
 export LANG=zh_CN-UTF8
 ```
-
 _optional_
 ```sh
 sudo dpkg-reconfigure locales
@@ -55,7 +68,6 @@ sudo dpkg-reconfigure locales
 ```sh
 sudo apt-get install fcitx fcitx-sunpinyin
 ```
-
 _optional_
 ```sh
 im-config
@@ -66,7 +78,6 @@ Perform a quick scan for open ports:
 ```sh
 sudo nmap -sS localhost
 ```
-
 _optional_
 Enable BBR by adding two lines in /etc/sysctl.conf:
 ```sh
@@ -80,6 +91,9 @@ TODO
 ## Install Latex
 ```sh
 sudo apt-get install texlive
+sudo apt-get install texlive-pictures
+sudo apt-get install texlive-science
+sudo apt-get install texlive-latex-extra
 ```
 
 ## Install virtualbox
@@ -101,7 +115,6 @@ Mount the iso file:
 ```sh
 sudo mount -t auto -o loop ~/path-to-matlab/Matlab_2016a/R2016a_glnxa64.iso ~/matlab/
 ```
-
 Create desktop entry:
 ```sh
 [Desktop Entry]
@@ -109,6 +122,11 @@ Exec=/usr/local/MATLAB/R2016a/bin/matlab -desktop
 Icon=/usr/local/MATLAB/R2016a/toolbox/shared/dastudio/resources/MatlabIcon.png
 Terminal=false
 StartupNotify=true
+```
+
+## Mount NTFS
+```sh
+sudo apt-get install ntfs-3g
 ```
 
 ## Mount Android phone (MTP)
